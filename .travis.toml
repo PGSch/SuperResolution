@@ -1,0 +1,6 @@
+language: julia
+os:
+  - osx
+julia:
+  - nightly
+  - 1.0
