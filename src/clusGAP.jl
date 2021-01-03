@@ -1,5 +1,3 @@
-my_f(x,y)=2x+3y
+my_a(x,y)=1x+1y
 
-
-
-export my_f
+export my_a
