@@ -1,0 +1,13 @@
+name = "SuperResolution"
+uuid = "76e0f712-2142-49ac-b587-1ad205ad0dd3"
+authors = ["Patrick Schneider"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
