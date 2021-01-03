@@ -4,17 +4,10 @@ notifications:
   email: false
 
 jobs:
-  # allow_failures:
-  #   - julia: nightly
-  #   - julia: 1.1
-  #   - os: windows
   include:
     - stage: "Documentation"
       julia: 1.0
-      os:
-#        - linux
-        - osx
-#        - windows
+      os: osx
       script:
         - julia --color=yes --project=docs/ -e 'using Pkg; Pkg.instantiate()'
         - julia --color=yes --project=docs/ docs/make.jl
