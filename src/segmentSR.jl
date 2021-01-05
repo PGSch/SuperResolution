@@ -1,6 +1,6 @@
 using PDMats
 include("fctSR.jl")
-
+#tmp1=SuperResolution.SegmentSR(100,SuperResolution.DataSim,SuperResolution.RealLocs)
 mutable struct BoundsSegment
 	x::Array{Float64,1}
 	y::Array{Float64,1}
@@ -16,14 +16,14 @@ mutable struct SegmentSR
 	select::Function
 	idx::Array{Array{Int}}	#list of valid/verified segment indices
 		#Segment-restricted features
-	ground_truth::Array{Array{Float64}}
-	loc::Array{Array{Float64}}
-	frame::Array{Array{Int64}}
-	mol_ID::Array{Array{Int64}}
-	MU::Array{Array{Float64}}
-	K::Array{Array{Int}}	#number of molecules in segment (according to ground_truth)
-	N::Array{Array{Int}}	#number of observations in segment
-	bounds::Array{BoundsSegment}	#typeof(BoundsSegment)=BoundsSegment
+	ground_truth::Array{Array{Float64,2},2}
+	loc::Array{Array{Float64,2},2}
+	frame::Array{Array{Int64,1},2}
+	mol_ID::Array{Array{Int64,1},2}
+	MU::Array{Array{Float64,2},2}
+	K::Array{Int64,2}	#number of molecules in segment (according to ground_truth)
+	N::Array{Int64,2}	#number of observations in segment
+	bounds::Array{BoundsSegment,2}	#typeof(BoundsSegment)=BoundsSegment
 
 		#Overall (unrestricted) features
 	all_ground_truth::Array{Float64}
@@ -31,8 +31,9 @@ mutable struct SegmentSR
 	all_frame::Array{Int64}
 	all_mol_ID::Array{Int64}
 ##Function to initialize structure
-	function SegmentSR(NN::Int64,df1::DataFrame,df2::DataFrame)
-		DataSim=df1,RealLoc=df2
+	function SegmentSR(NN::Int64,df1,df2)
+		DataSim=df1
+		RealLoc=df2
 		obj=new()
 		obj.idx=Array{Array{Int}}(undef,0)
 ##Segment-restricted features
@@ -41,14 +42,14 @@ mutable struct SegmentSR
 		obj.frame=Array{Array{Int64,1},2}(undef,NN-1,NN-1)	#	𝔽sim
 		obj.mol_ID=Array{Array{Int64,1},2}(undef,NN-1,NN-1)	#	𝕄sim
 		obj.MU=Array{Array{Float64,2},2}(undef,NN-1,NN-1)	#	mean of members for each mol_ID
-		obj.K=Array{Array{Int64,1},2}(undef,NN-1,NN-1)
-		obj.N=Array{Array{Int64,1},2}(undef,NN-1,NN-1)
+		obj.K=Array{Int64,2}(undef,NN-1,NN-1)
+		obj.N=Array{Int64,2}(undef,NN-1,NN-1)
 		obj.bounds=Array{BoundsSegment,2}(undef,NN-1,NN-1)
 ##Overall (unrestricted) features
-		obj.all_ground_truth=Matrix{Float64}(RealLoc[[2,3,1],])	#Real Localisations
-		obj.all_mol_ID=Matrix{Float64}(RealLoc[[2,3,1],])	#Real Localisations
-		obj.all_frame=Vector{Int64}(DataSim[3,])	#Framenumber
-		obj.all_mol_ID=Vector{Int64}(DataSim[1,])	#mol_ID
+		obj.all_ground_truth=Array{Float64}(RealLoc[[2,3,1],])	#Real Localisations
+		obj.all_loc=Matrix{Float64}(DataSim[[4,5,3],])		#Observations
+		obj.all_frame=Array{Int64}(DataSim[3,])	#Framenumber
+		obj.all_mol_ID=Array{Int64}(DataSim[1,])	#mol_ID
 ##1..Extract needed features
 			#Mandatory column order 𝕐sim:
 			#[:,1]~x[nm]|[:,2]~y[nm]|[:,3]~franumber
@@ -74,11 +75,9 @@ mutable struct SegmentSR
 	# ymax=Ypart[partN2+1]
 		for j=1:(NN-1)
 			for k=1:(NN-1)
-				obj.bounds[j,k].x=[Xpart[j],Xpart[j+1]]
-				obj.bounds[j,k].y=[Ypart[k],Ypart[k+1]]
+				obj.bounds[j,k]=BoundsSegment([Xpart[j],Xpart[j+1]],[Ypart[k],Ypart[k+1]])
 			end
 		end
-
 ##3.. Restrict Area
 		for partN=1:(NN-1)
 			for partN2=1:(NN-1)
@@ -91,25 +90,22 @@ mutable struct SegmentSR
 				ymax=Ypart[partN2+1]
 				#Crop sim-data based on partition
 				obj.loc[partN,partN2],val=dim2crop(𝕐sim,xmin,xmax,ymin,ymax)	#val is the boolean for indices in contraint area
-				push!(amountM,size(𝕐sim)[1])#######################substitute for object field obj.N???#########################################################################################################################
-				obj.N[partN,partN2]=size(𝕐sim)[1]
+				obj.mol_ID[partN,partN2]=𝕄sim[val]
+				obj.frame[partN,partN2]= 𝔽sim[val]
+				obj.ground_truth[partN,partN2],val2= dim2crop(ℝsim,xmin,xmax,ymin,ymax)
+				push!(amountM,size(obj.loc[partN,partN2])[1])#######################substitute for object field obj.N???#########################################################################################################################
+				obj.N[partN,partN2]=size(obj.loc[partN,partN2])[1]
+				obj.K[partN,partN2]=size(unique(𝕄sim[val]),1)
 ##4..Verify if segments are valid under constraints
-				if size(𝕐sim)[1] > 5 && size(unique(𝕄sim[val]),1)>1
+				if size(obj.loc[partN,partN2])[1] > 5 && size(unique(obj.mol_ID[partN,partN2]),1)>1
 					push!(partN_valid,partN)
 					push!(partN2_valid,partN2)
 					#Crop Framenumber, mol_ID and Real Localisations based on cropped sim-data
-					𝔽sim = 𝔽sim[val]
-					obj.frame[partN,partN2]= 𝔽sim[val]
-					𝕄sim= 𝕄sim[val]	#mol_ID
-					obj.mol_ID[partN,partN2]= 𝕄sim[val]
-					ℝsim,val2 = dim2crop(ℝsim,xmin,xmax,ymin,ymax)
-					obj.ground_truth[partN,partN2]= dim2crop(ℝsim,xmin,xmax,ymin,ymax)
-
 					#For validation purpose, determine amount of simulated molecules
-					𝛍sim= Matrix{Float64}(undef,length(unique(𝕄sim)),2)
+					𝛍sim= Matrix{Float64}(undef,length(unique(obj.mol_ID[partN,partN2])),2)
 					#For unique molecule numbers compute means
-					for i=1:length(unique(𝕄sim))
-						𝛍sim[i,:]=mean(𝕐sim[𝕄sim .== unique(𝕄sim)[i],1:2]',dims=2)[:]
+					for i=1:length(unique(obj.mol_ID[partN,partN2]))
+						𝛍sim[i,:]=mean(obj.loc[partN,partN2][obj.mol_ID[partN,partN2] .== unique(obj.mol_ID[partN,partN2])[i],1:2]',dims=2)[:]
 					end
 					obj.MU[partN,partN2]=𝛍sim
 				end
