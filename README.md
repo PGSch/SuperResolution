@@ -6,4 +6,4 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/lsftvomwnugjr87a?svg=true)](https://ci.appveyor.com/project/PGSch/superresolution)
 [![codecov](https://codecov.io/gh/PGSch/SuperResolution/branch/master/graph/badge.svg?token=zdFsH1KZKH)](https://codecov.io/gh/PGSch/SuperResolution)
 
-This package supports the identification of blinking artefacts in super resolution microscopy.
+This package supports the identification of blinking artifacts in super resolution microscopy.
