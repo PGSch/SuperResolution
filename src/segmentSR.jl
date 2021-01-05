@@ -72,7 +72,12 @@ mutable struct SegmentSR
 	# xmax=Xpart[partN+1]
 	# ymin=Ypart[partN2]
 	# ymax=Ypart[partN2+1]
-		for j=1:(NN-1) for k=1:(NN-1) obj.bounds[j,k].x=[Xpart[j],Xpart[j+1]], obj.bounds[j,k].y=[Ypart[k],Ypart[k+1]] end end
+		for j=1:(NN-1)
+			for k=1:(NN-1)
+				obj.bounds[j,k].x=[Xpart[j],Xpart[j+1]]
+				obj.bounds[j,k].y=[Ypart[k],Ypart[k+1]]
+			end
+		end
 
 ##3.. Restrict Area
 		for partN=1:(NN-1)
