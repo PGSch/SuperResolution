@@ -14,7 +14,7 @@ end
 
 mutable struct SegmentSR
 	select::Function
-	idx::Array{Array{Int}}	#list of valid/verified segment indices
+	idx::Array{Tuple{Int64,Int64},1}	#list of valid/verified segment indices
 		#Segment-restricted features
 	ground_truth::Array{Array{Float64,2},2}
 	loc::Array{Array{Float64,2},2}
@@ -35,7 +35,7 @@ mutable struct SegmentSR
 		DataSim=df1
 		RealLoc=df2
 		obj=new()
-		obj.idx=Array{Array{Int}}(undef,0)
+		obj.idx=Array{Tuple{Int64,Int64},1}(undef,0)	#valid indices from restriction; use as A[CartesianIndex(obj.idx[j])]
 ##Segment-restricted features
 		obj.ground_truth=Array{Array{Float64,2},2}(undef,NN-1,NN-1)	#	ℝsim
 		obj.loc=Array{Array{Float64,2},2}(undef,NN-1,NN-1)	#	𝕐sim
@@ -98,8 +98,7 @@ mutable struct SegmentSR
 				obj.K[partN,partN2]=size(unique(𝕄sim[val]),1)
 ##4..Verify if segments are valid under constraints
 				if size(obj.loc[partN,partN2])[1] > 5 && size(unique(obj.mol_ID[partN,partN2]),1)>1
-					push!(partN_valid,partN)
-					push!(partN2_valid,partN2)
+					push!(obj.idx,(partN,partN2))
 					#Crop Framenumber, mol_ID and Real Localisations based on cropped sim-data
 					#For validation purpose, determine amount of simulated molecules
 					𝛍sim= Matrix{Float64}(undef,length(unique(obj.mol_ID[partN,partN2])),2)
@@ -121,63 +120,3 @@ export segmentSR
 #
 # ##
 #
-# 				###4.. Setup KLClustering
-# 				#𝕐sim[:,3]=map(i->pdf(G,𝕐sim[i,3]),1:length(𝕐sim[:,3]))
-# 				Y=dim2adj(𝕐sim)
-# 				𝛆=minimum(Y)
-# 				𝛅 = Int64(3)
-# 				global 𝕐simclAll=[𝕐sim,] #x,y coordinates of all observations
-# 				sKLD=[Y,]
-# 				#KLDeval=Array{Array{Float64,2},1}(undef,length(Y))
-# 				global KLDeval=deepcopy([𝕐sim,])
-# 				N=size(sKLD[1])[1]
-# 				global sMM = [dim2mix(𝕐sim[:,1:2]),]
-# 				global Wall = [1/N*ones(1,N)[1,:],]
-# 				global ω = [1/N*ones(1,N)[1,:],]
-# 				global Σall = [repeat([1.0*eye(𝛅)],N),]
-# 				global Aall = [collect(1:N),] #cluster indices: not merged indices
-# 				global Acoll = [collect(1:N),] #cluster indices: indices each observation to track clustering progress; entries are quivalent to 𝕄sim
-# 				global κtmp=size(unique(𝕄sim),1)
-# 				global ι=1
-#
-# 				#KLDeval[1]=dim2WKLDfull(sKLD[ι],Σall[ι],Wall[ι],α,Aall[ι],Acoll[ι])[6]
-# 				sKLD[1],Wall[1],Σall[1],Aall[1],Acoll[1],KLDeval[1]=dim2WKLDfull(sKLD[ι],Σall[ι],Wall[ι],Aall[ι],Acoll[ι])
-# 				#print("Aall[$(ι)]=$(Aall[ι])\n")
-# 				###4.. KLClustering
-# 				print("number of observations = $(N)\n");push!(obsGLOBAL,N)
-# 				#print("amountM = $(N)\n")
-# 				#print("κtmp before while = $(κtmp)\n")
-# 				@time(
-# 				while size(Aall[ι],1)>0
-# 					#print("o=",o,"\n")
-# 					# N=maximum(size(sKLD[i]))
-# 					#print("Aall[$(ι)]=$(Aall[ι])\n")
-# 					tmpsKLD,tmpW,tmpS,tmpA,tmpA_coll,tmpKLDeval=dim2WKLDfull(sKLD[ι],Σall[ι],Wall[ι],Aall[ι],Acoll[ι])
-# 					tmpA=tmpA[map(i->tmpA[i]!=0,1:length(tmpA))]
-#
-# 					push!(Wall,tmpW)#Weight Coefficient
-# 					push!(Σall,tmpS)#COV Matrices
-# 					push!(Aall,tmpA)#Cluster Indices
-# 					push!(Acoll,tmpA_coll)#Cluster Indices without removing collapsed observations
-# 					tmpsKLD=tmpsKLD[map(i->!isnan(tmpsKLD[i][1]),1:length(tmpsKLD))]
-# 					tmpW=tmpW[map(i->!isnan(tmpW[i]),1:length(tmpW))]
-# 					push!(sKLD,tmpsKLD)#x,y values + pdf value of Framenumber
-# 					push!(KLDeval,tmpKLDeval)
-# 					push!(ω,tmpW)#redundant!!! remove/merge variable!!
-# 					push!(𝕐simclAll,dim2adj(sKLD[ι]))#x,y values from sKLD variable
-# 					𝕐simcl=dim2adj(sKLD[ι])
-# 					push!(sMM,dim2mix(𝕐simcl,ω[ι]))#MixtureModel (PDF)
-# 					global κtmp=size(sKLD[ι],1)
-# 					global ι+=1
-# 				end
-# 				)
-# 				#x,y coordinates of cluster centers, for each iteration
-# 				𝕐simclAll3D=𝕐simclAll
-# 				𝕐simclAll=map(i->𝕐simclAll[i][:,1:2],1:length(𝕐simclAll))
-#
-# 			###5.. Cluster Evaluation
-# 				#sMMsim=dim2mix(𝛍sim,𝛚sim)#GMM-Distribution based on mean ("RealLoc") mol_IDs, for comparison
-#
-# 				print("##########################\n")
-# 				print("Compute wKLD Solution...\n")
-# 				print("##########################\n")

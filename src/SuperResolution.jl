@@ -13,6 +13,14 @@ include("wkldSR.jl")
 greet()=print("Super Resolution - Blinking Artefacts")
 # Write your package code here.
 
+# tmp1=SuperResolution.SegmentSR(10,SuperResolution.DataSim,SuperResolution.RealLocs)
+# tmp2=SuperResolution.ModelSR(tmp1,(8,8))
+# tmp3=(map(i->mean(tmp2.weight[i]),2:(length(tmp2.weight)-1)))
+# tmp4=(map(i->mean(tmp2.param[i]),1:(length(tmp2.param)-1)))
+# plot(tmp3)
+# plot(tmp4)
+# scatter(tmp1.loc[8,8][:,1],tmp1.loc[8,8][:,2])
+
 pStr1="/Users/Patrick/Documents/GitHub/SuperResolution/src/locs_gamma_conf.csv"
 pStr2="/Users/Patrick/Documents/GitHub/SuperResolution/src/labels_gamma.csv"
 global DataSim, RealLocs=importSR(pStr1,pStr2)

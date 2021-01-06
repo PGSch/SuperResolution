@@ -1,5 +1,6 @@
 using SuperResolution
 using Test
+using DataFrames
 
 @testset "importSR.jl" begin
     @test typeof(importSR("/Users/Patrick/Documents/GitHub/SuperResolution/src/locs_gamma_conf.csv","/Users/Patrick/Documents/GitHub/SuperResolution/src/labels_gamma.csv"))==Tuple{DataFrame,DataFrame}
