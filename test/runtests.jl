@@ -1,3 +1,4 @@
+using SuperResolution
 using SafeTestsets
 @safetestset "Misc Func Tests"          begin include("fctSR_tests.jl") end #mostly functions to change var-type/dimensions
 @safetestset "Import Tests"             begin include("importSR_tests.jl") end  #data imported correctly
