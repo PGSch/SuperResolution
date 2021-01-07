@@ -4,7 +4,7 @@ using SafeTestsets
 @safetestset "Import Tests"             begin include("importSR_tests.jl") end  #data imported correctly
 @safetestset "Partitioning Tests"       begin include("segmentSR_tests.jl") end    #partitioning
 
-@safetestset "WLKD Tests"               begin include("wkldSR_tests.jl") end    #divergence and parameter iteration
+@safetestset "Model Tests"               begin include("modelSR_tests.jl") end    #divergence and parameter iteration
 @safetestset "GAP Tests"                begin include("clusGAP_tests.jl") end   #gap statistic
 @safetestset "SR tests"                 begin include("clusSR_tests.jl") end  #interaction of all functions
 

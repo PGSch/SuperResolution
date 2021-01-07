@@ -17,7 +17,7 @@ function dim(A)
 	d2=length(A[1,:])
 	return d1,d2
 end
-function eye(d::Int64)
+function eye(d)
 	E=zeros(Float64,d,d)
 	map(i->E[i,i]=1,1:dim(E)[1])
 	return E

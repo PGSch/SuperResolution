@@ -15,14 +15,14 @@ using Test
 # 	map(i->E[i,i]=1,1:dim(E)[1])
 # 	return E
 # end
-    @test eye(3::Int64)*eye(3::Int64)==eye(3::Int64)
+    @test eye(3)*eye(3)==eye(3)
 # function ctrans(X::Array{Float64,2})
 # 	convert(Array{Float64,2},transpose(X))
 # end
 # function ctrans(X::Array{Array{Float64,2},1})
 # 	convert(Array{Array,1},map(i->ctrans(𝛍[1][i])[:],collect(1:length(𝛍[1]))))
 # end
-    @test ctrans([[1::Int64 2::Int64];[3::Int64 4::Int64]])==[[1::Int64 3::Int64];[2::Int64 4::Int64]]
+    @test ctrans([[1 2];[3 4]])==[[1 3];[2 4]]
 # function dim2clean(MU_star::Array{Array,1})
 # 	MU_star = dim2adj(MU_star)
 # 	N=maximum(size(MU_star))
