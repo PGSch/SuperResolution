@@ -256,12 +256,14 @@ function mu_star(mu1::Array{Float64,1},mu2::Array{Float64,1},W::Array{Float64,1}
 	mu_star = (W[1]*mu1+W[2]*mu2)/(W[1]+W[2])
 	return mu_star
 end
-function s_star(mu1::Array{Float64,1},mu2::Array{Float64,1},S1::Array{Float64,2},S2::Array{Float64,2},W::Array{Float64,1})
+function s_star(mu1::Array{Float64,1},mu2::Array{Float64,1},S1::Array{Float64,2},S2::Array{Float64,2},W=NaN)#W::Array{Float64,1})
+	if isnan(W[1]) W=[1.,1.] end
 	Σ_star = (W[1]*S1 + W[2]*S2)/(W[1]+W[2]) + (W[1]*W[2]*(mu1-mu2)*(mu1-mu2)')/((W[1]+W[2])^2)
 	return Σ_star
 end
-function dim2KLD(mu1::Array{Float64,1},mu2::Array{Float64,1},S1::Array{Float64,2},S2::Array{Float64,2},W::Array{Float64,1})
+function dim2KLD(mu1::Array{Float64,1},mu2::Array{Float64,1},S1::Array{Float64,2},S2::Array{Float64,2},W=NaN)#W::Array{Float64,1})
 	S=[S1,S2]
+	if isnan(W[1]) W=[1.,1.] end
 	Σ_star = s_star(mu1,mu2,S[1],S[2],[W[1],W[2]])
 	𝛅=Int64(3)
 	KLD = (sum([W[i]/2.0 * (tr(Σ_star^-1 * S[i]) + log(det(Σ_star * S[i]^-1))-𝛅)] for i in 1:2)[1] + (W[1]*W[2]/(2.0*(W[1]+W[2])^2) * (mu1-mu2)'*Σ_star^-1*(mu1-mu2)))
@@ -287,7 +289,7 @@ function dim2KLDex(KLDfull::Array{Float64,2})
 	return EX
 end
 ##Weighted Kullback Leibler Divergence
-function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{Float64,1},SEG_FrNm,A=NaN,Atmp=NaN)
+function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{Float64,1},SEG_FrNm,A=NaN,Atmp=NaN,modusKLD=1)
 	#entries are merged during each collapse, therefore K represents the current number of clusters
 	K=maximum(size(MU))
 	#if no A or Atmp is submitted, it's set as NaN (though A and Atmp are by default submitted during dim2WKLDfull computation)
@@ -300,55 +302,117 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 	A_coll = map(i->Atmp[i],1:length(Atmp)) #A_coll stores the cluster IDs which are updated for every collapse
 	𝛅 = Int64(3) #dimension
 	S_star= repeat([1.0*eye(𝛅)],length(S)) #COV Matrices
-	FrNm = Feval(A_coll,SEG_FrNm)[1] #evaluate frames f.e. clust ID in A_coll
-	#compute normal distribution with μMLE and σMLE for each current cluster
-	#NormDistClustID = map(i->normalMLE(FrNm[i]),1:length(FrNm))
-	GeomDistClustID = map(i->geomMLE(FrRef(FrNm[i])),1:length(FrNm))
-	#KL distances
 	K = maximum(size(MU_star))
 	#print("K=",K,"\n")
 	#initialize "distance" matrix
 	KLD = 1e-15*ones(K,K)
+	FrNm = Feval(A_coll,SEG_FrNm)[1] #evaluate frames f.e. clust ID in A_coll
+	#compute normal distribution with μMLE and σMLE for each current cluster
+	#NormDistClustID = map(i->normalMLE(FrNm[i]),1:length(FrNm))
+	GeomDistClustID = map(i->geomMLE(FrRef(FrNm[i])),1:length(FrNm))
 	weightParaKLD = 1e-15*ones(K,K)
-	#compute KL-distances for each and every pair of points
+	if modusKLD==1
+		#KL distances
+		#compute KL-distances for each and every pair of points
+		for k=1:K
+			for j=1:K
+				if j==k
+					KLD[j,k]=1e5
+				else
+					KLD[j,k] = (1/exp(sum(pdf.(GeomDistClustID[k],FrNm[j])))) * dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
+					weightParaKLD[j,k] = (1/exp(sum(pdf.(GeomDistClustID[k],FrNm[j]))))
+				end
+			end
+		end
+		#dim2KLDex computes extrema and corresponding indices in the distance matrix
+		KLD[map(i->isnan(KLD[i]),1:length(KLD[:]))].= maximum(KLD[map(i->!isnan(KLD[i]),1:length(KLD[:]))])
+		EX = dim2KLDex(KLD)
+		#min1,min2 is the pair of values with minimal KLD and get merged
+		min1=EX[2,1]
+		min2=EX[3,1]
+		global MU_star[EX[2,1]] = mu_star(MU_star[EX[2,1]],MU_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
+		S_star[EX[2,1]] = s_star(MU_star[EX[2,1]],MU_star[EX[3,1]],S_star[EX[2,1]],S_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
+		W_star[EX[2,1]] += W_star[EX[3,1]]
+		S_star[EX[3,1]] = NaN.*S_star[EX[3,1]]
+		global MU_star[EX[3,1]] =NaN.*MU_star[EX[3,1]]
+		W_star[EX[3,1]] = NaN.*W_star[EX[3,1]]
+		A_coll[A_coll .== A_star[EX[3,1]]].= A_star[EX[2,1]]
+		#global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
+		global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
+		global A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
+		S_star=S_star[map(i->!isnan(S_star[i][1]),1:length(S_star))]
+		global MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
+		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
+		S_star=repeat([1.0*eye(𝛅)],length(S_star))
+		KLD[EX[1,1]]=0.0
+		#print("END OF while loop dim2WKLDfull\n")
+		#EDIT 01062021
+		MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
+		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
+		A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
+		return MU_star,W_star,S_star,A_star,A_coll,KLD,weightParaKLD,GeomDistClustID
+	else
+		for k=1:K
+			for j=1:K
+				if j==k
+					KLD[j,k] = 1e5
+				else
+					KLD[j,k] = dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
+				end
+			end
+		end
+		#dim2KLDex computes extrema and corresponding indices in the distance matrix
+		KLD[map(i->isnan(KLD[i]),1:length(KLD[:]))].= maximum(KLD[map(i->!isnan(KLD[i]),1:length(KLD[:]))])
+		EX = dim2KLDex(KLD)
+		#min1,min2 is the pair of values with minimal KLD and get merged
+		min1=EX[2,1]
+		min2=EX[3,1]
+		global MU_star[EX[2,1]] = mu_star(MU_star[EX[2,1]],MU_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
+		S_star[EX[2,1]] = s_star(MU_star[EX[2,1]],MU_star[EX[3,1]],S_star[EX[2,1]],S_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
+		W_star[EX[2,1]] += W_star[EX[3,1]]
+		S_star[EX[3,1]] = NaN.*S_star[EX[3,1]]
+		global MU_star[EX[3,1]] =NaN.*MU_star[EX[3,1]]
+		W_star[EX[3,1]] = NaN.*W_star[EX[3,1]]
+		A_coll[A_coll .== A_star[EX[3,1]]].= A_star[EX[2,1]]
+		#global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
+		global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
+		global A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
+		S_star=S_star[map(i->!isnan(S_star[i][1]),1:length(S_star))]
+		global MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
+		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
+		S_star=repeat([1.0*eye(𝛅)],length(S_star))
+		KLD[EX[1,1]]=0.0
+		#print("END OF while loop dim2WKLDfull\n")
+		#EDIT 01062021
+		MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
+		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
+		A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
+		return MU_star,W_star,S_star,A_star,A_coll,KLD,weightParaKLD,GeomDistClustID
+	end
+end
+##dim2KLD
+function dim2KLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1})
+	#entries are merged during each collapse, therefore K represents the current number of clusters
+	K=maximum(size(MU))
+	#𝛅 = Int64(3) #dimension
+	MU_star = map(i->MU[i],1:length(MU)) #(clustered-)data based on 𝕐sim
+	S_star=S
+	#S_star= repeat([1.0*eye(𝛅)],length(S)) #COV Matrices
+	#print("K=",K,"\n")
+	#initialize "distance" matrix
+	KLD = 1e-15*ones(K,K)
 	for k=1:K
 		for j=1:K
 			if j==k
-				KLD[j,k]=1e5
+				KLD[j,k] = 0
 			else
-				KLD[j,k] = (1/exp(sum(pdf.(GeomDistClustID[k],FrNm[j])))) * dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
-				weightParaKLD[j,k] = (1/exp(sum(pdf.(GeomDistClustID[k],FrNm[j]))))
+				KLD[j,k] = dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
 			end
 		end
 	end
-	#dim2KLDex computes extrema and corresponding indices in the distance matrix
-	KLD[map(i->isnan(KLD[i]),1:length(KLD[:]))].= maximum(KLD[map(i->!isnan(KLD[i]),1:length(KLD[:]))])
-	EX = dim2KLDex(KLD)
-	#min1,min2 is the pair of values with minimal KLD and get merged
-	min1=EX[2,1]
-	min2=EX[3,1]
-	global MU_star[EX[2,1]] = mu_star(MU_star[EX[2,1]],MU_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
-	S_star[EX[2,1]] = s_star(MU_star[EX[2,1]],MU_star[EX[3,1]],S_star[EX[2,1]],S_star[EX[3,1]],[W_star[EX[2,1]],W_star[EX[3,1]]])
-	W_star[EX[2,1]] += W_star[EX[3,1]]
-	S_star[EX[3,1]] = NaN.*S_star[EX[3,1]]
-	global MU_star[EX[3,1]] =NaN.*MU_star[EX[3,1]]
-	W_star[EX[3,1]] = NaN.*W_star[EX[3,1]]
-	A_coll[A_coll .== A_star[EX[3,1]]].= A_star[EX[2,1]]
-	#global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
-	global A_star[EX[3,1]] = 0*A_star[EX[3,1]]
-	global A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
-	S_star=S_star[map(i->!isnan(S_star[i][1]),1:length(S_star))]
-	global MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
-	W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
-	S_star=repeat([1.0*eye(𝛅)],length(S_star))
-	KLD[EX[1,1]]=0.0
-	#print("END OF while loop dim2WKLDfull\n")
-	#EDIT 01062021
-	MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
-	W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
-	A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
-	return MU_star,W_star,S_star,A_star,A_coll,KLD,weightParaKLD,GeomDistClustID
+	return KLD
 end
+##
 ############################################################################
 #	global variables can get changed inside a loop, but keep it's previously
 #	assigned global value.
@@ -373,3 +437,4 @@ export s_star
 export dim2KLD
 export dim2KLDex
 export dim2WKLDfull
+export dim2KLDfull

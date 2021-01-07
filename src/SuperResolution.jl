@@ -8,18 +8,24 @@ include("fctSR.jl")
 include("importSR.jl")
 include("plotSR.jl")
 include("segmentSR.jl")
-include("wkldSR.jl")
+include("modelSR.jl")
 
 greet()=print("Super Resolution - Blinking Artefacts")
 # Write your package code here.
 
 # tmp1=SuperResolution.SegmentSR(10,SuperResolution.DataSim,SuperResolution.RealLocs)
+# SAMPLE1=SuperResolution.ctrans(rand(tmp2.model[end-1],60))
+# gather_X1=hcat(tmp1.loc[8,8][:,2],SAMPLE1[:,1])
+# scatter(SuperResolution.𝕐sim[:,1],SuperResolution.𝕐sim[:,2])
+# scatter(tmp1.loc[8,8][:,1],tmp1.loc[8,8][:,2])
 # tmp2=SuperResolution.ModelSR(tmp1,(8,8))
 # tmp3=(map(i->mean(tmp2.weight[i]),2:(length(tmp2.weight)-1)))
 # tmp4=(map(i->mean(tmp2.param[i]),1:(length(tmp2.param)-1)))
 # plot(tmp3)
 # plot(tmp4)
 # scatter(tmp1.loc[8,8][:,1],tmp1.loc[8,8][:,2])
+# plot(contourf(exp(abs.(tmp2.wkld[end-8]-tmp3.wkld[end-8]))))
+
 filename1="locs_gamma_conf.csv"
 filename2="labels_gamma.csv"
 filepath1 = joinpath(@__DIR__, filename1)
