@@ -113,7 +113,7 @@ mutable struct SegmentSR
 		obj
 	end
 end
-export segmentSR
+export SegmentSR
 ##
 
 

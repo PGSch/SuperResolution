@@ -9,9 +9,11 @@ include("segmentSR.jl")
 #	For final use, create such ModelSR for every valid SEG.idx
 mutable struct ModelSR
 		#Segment-restricted features
+	idx::Tuple{Int64,Int64}
 	modus::Int64
 	dim::Int64
 	loc::Array{Array{Float64,2},1}	#localisations of cluster populations
+	frame::Array{Int64,1}
 	model::Array{MixtureModel,1}	#MixtureModel
 	member::Array{Array{Int64,1},1}	#cluster ID for all localisations
 	clus_ID::Array{Array{Int64,1},1}	#cluster ID for remaining populations (needed for dim2WKLDfull; might replace with unique() and findall() for indices)
@@ -28,6 +30,8 @@ mutable struct ModelSR
 ##Function to initialize structure
 	function ModelSR(SEG::SuperResolution.SegmentSR,idx::Tuple{Int64,Int64},modINPUT::Int64) #idx from list SEG.idx[j]
 		obj=new()
+		obj.idx=idx
+		obj.frame=SEG.frame[CartesianIndex(idx)]
 		#obj.modus=["KLD","WKLD"][sum(modINPUT==1)+1]	#modINPUT==1.."WKLD", else "KLD"
 		obj.modus=modINPUT
 		obj.dim=size(SEG.all_loc[:,1:(end-1)])[2]	#all_loc last col is framenumbers

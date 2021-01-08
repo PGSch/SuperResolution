@@ -10,8 +10,37 @@ include("plotSR.jl")
 include("segmentSR.jl")
 include("modelSR.jl")
 
-greet()=print("Super Resolution - Blinking Artefacts")
-# Write your package code here.
+greet()=print("Super Resolution - Blinking Artifacts")
+# using SuperResolution
+# tmp1=SuperResolution.SegmentSR(10,SuperResolution.DataSim,SuperResolution.RealLocs) #segment data
+# tmp2=SuperResolution.ModelSR(tmp1,(8,8),1)  #for segment create all models  WKLD
+# tmp22=SuperResolution.ModelSR(tmp1,(8,8),2)  #for segment create all models KLD
+# tmp3=SuperResolution.DistanceSR(tmp2,1)    #cluster WKLD
+# tmp33=SuperResolution.DistanceSR(tmp2,2)   #cluster KLD
+# tmp4=SuperResolution.clusGAP(tmp2,tmp22,1)  #Gap statistic
+# tmp44=SuperResolution.clusGAP(tmp2,tmp22,2)  #Gap statistic
+# #
+# using SuperResolution
+# tmp1=SuperResolution.SegmentSR(10,SuperResolution.DataSim,SuperResolution.RealLocs) #segment data
+# tmp2=SuperResolution.ModelSR(tmp1,(2,3),1)  #for segment create all models  WKLD
+# tmp22=SuperResolution.ModelSR(tmp1,(2,3),2)  #for segment create all models KLD
+# tmp3=SuperResolution.DistanceSR(tmp2,1)    #cluster WKLD
+# tmp33=SuperResolution.DistanceSR(tmp2,2)   #cluster KLD
+# tmp4=SuperResolution.clusGAP(tmp2,tmp22,1)  #Gap statistic
+# tmp44=SuperResolution.clusGAP(tmp2,tmp22,2)  #Gap statistic
+# #
+#             K_SR::Int64
+#             N_SR::Int64
+#             val_bool::BitArray{1}
+#             val_bool2::Array{BitArray{1},1}
+#             singleDist_SR::Array{Array{Float64,2},1}
+#             loc_SR::Array{Array{Array,1},1}
+#             frame_SR::Array{Array{Int64,1},1}
+#             cov_SR::Array{Array{Array{Float64,2},1},1}
+#             D_SR::Array{Float64,1}
+#             W_K::Float64
+#             weight_SR::Array{Array{Float64,2},1}
+
 
 # tmp1=SuperResolution.SegmentSR(10,SuperResolution.DataSim,SuperResolution.RealLocs)
 # SAMPLE1=SuperResolution.ctrans(rand(tmp2.model[end-1],60))

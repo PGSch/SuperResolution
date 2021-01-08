@@ -219,6 +219,10 @@ function geomMLE(FrNm::Array{Int64,1})
 	G=Geometric(βhat)
 	return G
 end
+function geomMLE(FrNm::Int64)
+	G=Geometric(0.999)
+	return G
+end
 function normalMLE(FrNm::Array{Int64,1})
 	μMLE=1/length(FrNm) * sum(FrNm)
 	σ=1.0
@@ -297,7 +301,7 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 	if isnan(Atmp[1]) Atmp=collect(1:K) end
 	global MU_star = map(i->MU[i],1:length(MU)) #(clustered-)data based on 𝕐sim
 	global A_star = map(i->A[i],1:length(A)) #cluster ID
-	#S_star = S
+
 	W_star = map(i->W[i],1:length(W)) #weights
 	A_coll = map(i->Atmp[i],1:length(Atmp)) #A_coll stores the cluster IDs which are updated for every collapse
 	𝛅 = Int64(3) #dimension
@@ -351,7 +355,7 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
 		A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
 		return MU_star,W_star,S_star,A_star,A_coll,KLD,weightParaKLD,GeomDistClustID
-	else
+	elseif modusKLD==2
 		for k=1:K
 			for j=1:K
 				if j==k
@@ -388,6 +392,17 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
 		A_star=A_star[map(i->A_star[i]!=0,1:length(A_star))]
 		return MU_star,W_star,S_star,A_star,A_coll,KLD,weightParaKLD,GeomDistClustID
+	elseif modusKLD==3
+		for k=1:K
+			for j=1:K
+				if j==k
+					KLD[j,k]=1e5
+				else
+					KLD[j,k] = (1/exp(sum(pdf.(GeomDistClustID[k],FrNm[j])))) * dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
+				end
+			end
+		end
+		return KLD
 	end
 end
 ##dim2KLD
@@ -406,11 +421,33 @@ function dim2KLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1})
 			if j==k
 				KLD[j,k] = 0
 			else
-				KLD[j,k] = dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0])
+				KLD[j,k] = abs(dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0]))
 			end
 		end
 	end
 	return KLD
+end
+##
+function dim2KLDfull_nonClust(MU::Array{Array,1},S::Array{Array{Float64,2},1},SEG_FrNm)
+	MU_star = map(i->MU[i],1:length(MU)) #(clustered-)data based on 𝕐sim
+	S_star=S
+	K = maximum(size(MU_star))
+	KLD = 1e-15*ones(K,K)
+	#GeomDistClustID = map(i->geomMLE(FrRef(SEG_FrNm[i])),1:length(SEG_FrNm))
+	GeomDistClustID = geomMLE(FrRef(SEG_FrNm))
+	#GeomDistClustID = map(i->geomMLE(FrRef(tmp3.Distance[8].frame_SR[i])),1:length(tmp3.Distance[8].frame_SR))
+	weightParaKLD = ones(K,K)
+	for k=1:K
+		for j=1:K
+			if j==k
+				KLD[j,k] = 0
+			else
+				KLD[j,k] = abs(1/(exp(abs(cdf(GeomDistClustID,FrRef(SEG_FrNm)[j])-cdf(GeomDistClustID,FrRef(SEG_FrNm)[k]))))*dim2KLD(MU_star[k],MU_star[j],S_star[k],S_star[j],[1.0,1.0]))
+				weightParaKLD[j,k] = 1/(exp(abs(cdf(GeomDistClustID,FrRef(SEG_FrNm)[j])-cdf(GeomDistClustID,FrRef(SEG_FrNm)[k]))))
+			end
+		end
+	end
+	return KLD,weightParaKLD
 end
 ##
 ############################################################################
