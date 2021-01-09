@@ -299,13 +299,15 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 	#if no A or Atmp is submitted, it's set as NaN (though A and Atmp are by default submitted during dim2WKLDfull computation)
 	if isnan(A[1]) A=collect(1:K) end
 	if isnan(Atmp[1]) Atmp=collect(1:K) end
+	MU=dim2adj(dim2adj(MU))
 	global MU_star = map(i->MU[i],1:length(MU)) #(clustered-)data based on 𝕐sim
 	global A_star = map(i->A[i],1:length(A)) #cluster ID
 
 	W_star = map(i->W[i],1:length(W)) #weights
 	A_coll = map(i->Atmp[i],1:length(Atmp)) #A_coll stores the cluster IDs which are updated for every collapse
 	𝛅 = Int64(3) #dimension
-	S_star= repeat([1.0*eye(𝛅)],length(S)) #COV Matrices
+	S_star=S
+	#S_star= repeat([1.0*eye(𝛅)],length(S)) #COV Matrices
 	K = maximum(size(MU_star))
 	#print("K=",K,"\n")
 	#initialize "distance" matrix
@@ -347,7 +349,7 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 		S_star=S_star[map(i->!isnan(S_star[i][1]),1:length(S_star))]
 		global MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
 		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
-		S_star=repeat([1.0*eye(𝛅)],length(S_star))
+		#S_star=repeat([1.0*eye(𝛅)],length(S_star))
 		KLD[EX[1,1]]=0.0
 		#print("END OF while loop dim2WKLDfull\n")
 		#EDIT 01062021
@@ -384,7 +386,7 @@ function dim2WKLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},W::Array{F
 		S_star=S_star[map(i->!isnan(S_star[i][1]),1:length(S_star))]
 		global MU_star=MU_star[map(i->!isnan(MU_star[i][1]),1:length(MU_star))]
 		W_star=W_star[map(i->!isnan(W_star[i]),1:length(W_star))]
-		S_star=repeat([1.0*eye(𝛅)],length(S_star))
+		#S_star=repeat([1.0*eye(𝛅)],length(S_star))
 		KLD[EX[1,1]]=0.0
 		#print("END OF while loop dim2WKLDfull\n")
 		#EDIT 01062021

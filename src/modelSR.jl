@@ -1,5 +1,6 @@
 using SuperResolution
 using Distributions
+using ProgressMeter
 include("fctSR.jl")
 include("segmentSR.jl")
 
@@ -58,7 +59,7 @@ mutable struct ModelSR
 		sKLD=[dim2adj(SEG.loc[CartesianIndex(idx)]),]	#dim2adj: 452×3 Array{Float64,2} --> 452-element Array{Array,1}
 		#N=size(sKLD[1])[1]
 
-		global i_inc=1
+		#global i_inc=1
 		#sKLD[1],obj.comp_mix[1],obj.cov[1],obj.clus_ID[1],obj.member[1],obj.wkld[1],obj.weight[i_inc+1],obj.geom[1]=dim2WKLDfull(sKLD[i_inc],obj.cov[i_inc],obj.comp_mix[i_inc],SEG.frame[CartesianIndex(idx)],obj.clus_ID[i_inc],obj.member[i_inc])
 		# sKLD[1],ωall[1],Σall[1],Aall[1],Acoll[1],KLDeval[1]=dim2WKLDfull(sKLD[i_inc],Σall[i_inc],ωall[i_inc],Aall[i_inc],Acoll[i_inc])
 ##1..Extract needed features
@@ -69,15 +70,14 @@ mutable struct ModelSR
 		###4.. KLClustering
 		print("number of observations = $(SEG.N[CartesianIndex(idx)])\n")
 		@time(
-		while size(obj.clus_ID[i_inc],1)>1
-			print("i_inc= $(i_inc)\n")
-			tmpsKLD,obj.comp_mix[i_inc+1],obj.cov[i_inc+1],obj.clus_ID[i_inc+1],obj.member[i_inc+1],obj.wkld[i_inc+1],obj.weight[i_inc+1],obj.geom[i_inc+1]=dim2WKLDfull(sKLD[i_inc],obj.cov[i_inc],obj.comp_mix[i_inc],SEG.frame[CartesianIndex(idx)],obj.clus_ID[i_inc],obj.member[i_inc],obj.modus)
-			# tmpA=tmpA[map(i->tmpA[i]!=0,1:length(tmpA))]
-			push!(sKLD,tmpsKLD)#x,y values + pdf value of Framenumber
-			push!(obj.loc,dim2adj(sKLD[i_inc+1]))#x,y values from sKLD variable
-			push!(obj.model,dim2mix(dim2adj(sKLD[i_inc+1]),obj.comp_mix[i_inc+1]))#MixtureModel (PDF)
-			global i_inc+=1
-		end
+			@showprogress(for i_inc=2:SEG.N[CartesianIndex(idx)]#while size(obj.clus_ID[i_inc],1)>1
+				tmpsKLD,obj.comp_mix[i_inc],obj.cov[i_inc],obj.clus_ID[i_inc],obj.member[i_inc],obj.wkld[i_inc],obj.weight[i_inc],obj.geom[i_inc]=dim2WKLDfull(
+				sKLD[i_inc-1],obj.cov[i_inc-1],obj.comp_mix[i_inc-1],SEG.frame[CartesianIndex(idx)],obj.clus_ID[i_inc-1],obj.member[i_inc-1],obj.modus)
+				push!(sKLD,tmpsKLD)#x,y values + pdf value of Framenumber
+				push!(obj.loc,dim2adj(sKLD[i_inc]))#x,y values from sKLD variable
+				push!(obj.model,dim2mix(dim2adj(sKLD[i_inc]),obj.comp_mix[i_inc]))#MixtureModel (PDF)
+				#global i_inc+=1
+			end)
 		)
 		for j=1:(length(obj.geom))
 			tete=map(i->params(obj.geom[j][i])[1],1:length(obj.geom[j]))
@@ -87,7 +87,6 @@ mutable struct ModelSR
 		obj
 	end
 end
-
 export ModelSR
 ##
 # #x,y coordinates of cluster centers, for each iteration

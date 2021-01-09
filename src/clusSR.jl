@@ -49,7 +49,6 @@ mutable struct SegDistanceSR
         #obj.weight_SR=ones(K_SR)#map(i->modelSR.weight[1][obj.val_bool2[i],:],1:length(obj.val_bool2))
         # dim2KLDfull(MU::Array{Array,1},S::Array{Array{Float64,2},1},modusKLD=2,weightParaKLD=NaN)
         if modINPUT==1
-            print("WEIGHTED KLD!!!\n")
             obj.singleDist_SR=map(i->dim2KLDfull_nonClust(obj.loc_SR[i],obj.cov_SR[i],obj.frame_SR[i])[1],1:K_SR)
             obj.weight_SR=map(i->dim2KLDfull_nonClust(obj.loc_SR[i],obj.cov_SR[i],obj.frame_SR[i])[2],1:K_SR)
             obj.D_SR=map(i->sum(obj.singleDist_SR[i]),1:K_SR)
@@ -57,7 +56,6 @@ mutable struct SegDistanceSR
             obj
         elseif modINPUT==2
         #dim2KLDfull_nonClust(MU::Array{Array,1},S::Array{Array{Float64,2},1},SEG_FrNm)
-            print("NON-WEIGHTED KLD!!!\n")
             obj.singleDist_SR=map(i->dim2KLDfull(obj.loc_SR[i],obj.cov_SR[i]),1:K_SR)
             obj.D_SR=map(i->sum(obj.singleDist_SR[i]),1:K_SR)
             obj.W_K=sum(i->sum(obj.D_SR[i]/(2*sum(obj.val_bool2[i]))),1:obj.K_SR)
@@ -71,13 +69,21 @@ mutable struct DistanceSR
         obj=new()
         obj.Distance=Array{SuperResolution.SegDistanceSR,1}(undef,model_SR.K[1])
         if modINPUT==1
-            for j=1:model_SR.K[1]
-                obj.Distance[j]=SegDistanceSR(model_SR,j,modINPUT)
-            end
+            print("##################################################################\n")
+            print("Computing full DistanceSR struct for var.....WEIGHTED KLD!!!\n")
+            @time(
+                for j=1:model_SR.K[1]
+                    obj.Distance[j]=SegDistanceSR(model_SR,j,modINPUT)
+                end
+            )
         elseif modINPUT==2
-            for j=1:model_SR.K[1]
-                obj.Distance[j]=SegDistanceSR(model_SR,j,modINPUT)
-            end
+            print("##################################################################\n")
+            print("Computing full DistanceSR struct for var.....NON-WEIGHTED KLD!!!\n")
+            @time(
+                for j=1:model_SR.K[1]
+                    obj.Distance[j]=SegDistanceSR(model_SR,j,modINPUT)
+                end
+            )
         end
         obj
     end

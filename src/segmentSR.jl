@@ -79,11 +79,11 @@ mutable struct SegmentSR
 			end
 		end
 ##3.. Restrict Area
-		for partN=1:(NN-1)
+		@showprogress for partN=1:(NN-1)
 			for partN2=1:(NN-1)
-				print("VVVVVVVVVVVVVVVVVVV\n")
-				print("partN = $(partN)\n")
-				print("partN2 = $(partN2)\n")
+				# print("VVVVVVVVVVVVVVVVVVV\n")
+				# print("partN = $(partN)\n")
+				# print("partN2 = $(partN2)\n")
 				xmin=Xpart[partN]
 				xmax=Xpart[partN+1]
 				ymin=Ypart[partN2]
@@ -97,7 +97,7 @@ mutable struct SegmentSR
 				obj.N[partN,partN2]=size(obj.loc[partN,partN2])[1]
 				obj.K[partN,partN2]=size(unique(𝕄sim[val]),1)
 ##4..Verify if segments are valid under constraints
-				if size(obj.loc[partN,partN2])[1] > 5 && size(unique(obj.mol_ID[partN,partN2]),1)>1
+				if size(obj.loc[partN,partN2])[1] > 5 && size(unique(obj.mol_ID[partN,partN2]),1)>2
 					push!(obj.idx,(partN,partN2))
 					#Crop Framenumber, mol_ID and Real Localisations based on cropped sim-data
 					#For validation purpose, determine amount of simulated molecules
@@ -110,7 +110,7 @@ mutable struct SegmentSR
 				end
 			end
 		end
-		obj
+		return obj
 	end
 end
 export SegmentSR
