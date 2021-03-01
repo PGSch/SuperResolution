@@ -1,4 +1,5 @@
 module SuperResolution
+cd(dirname(@__FILE__))
 using Statistics
 #cd("/Users/Patrick/Documents/GitHub/"
 include("clusGAP.jl")
@@ -11,28 +12,34 @@ include("segmentSR.jl")
 include("modelSR.jl")
 
 greet()=print("Super Resolution - Blinking Artifacts")
+greet()
 filename1="locs_gamma_conf.csv"
 filename2="labels_gamma.csv"
 filepath1 = joinpath(@__DIR__, filename1)
 filepath2 = joinpath(@__DIR__, filename2)
-pStr1=filepath1
-pStr2=filepath2
+# pStr1=filepath1
+# pStr2=filepath2
 # pStr1="/Users/Patrick/Documents/GitHub/SuperResolution/src/locs_gamma_conf.csv"
 # pStr2="/Users/Patrick/Documents/GitHub/SuperResolution/src/labels_gamma.csv"
-global DataSim, RealLocs=importSR(pStr1,pStr2)
+################################################################################
+################################################################################
+global DataSim, RealLocs=importSR(filepath1,filepath2)
 # using SuperResolution
+#SEG_SPLIT=100 splits the data into 100x100=10^4 segments of equal size
 SEG_SPLIT=100;
 tmp1=SuperResolution.SegmentSR(SEG_SPLIT,SuperResolution.DataSim,SuperResolution.RealLocs); #segment data
 
-iter_count=10;
-SEG_RESTR=rand(tmp1.idx,iter_count);
+#NUM_SEG=10 sets a test set of 10 segments for clustering
+NUM_SEG=5;
+SEG_RESTR=rand(tmp1.idx,NUM_SEG);
 EMP1=SuperResolution.EvalSR(tmp1,SEG_RESTR);
-#
+################################################################################
+################################################################################
 # EMP2=EMP1;
 # #tmp2=tmp1;
 # #
-# asdf=map(i->sum(tmp1.N[CartesianIndex(tmp1.idx[i])]),1:iter_count)
-# asdf2=map(i->(EMP1.ground_truth_K-EMP1.diff_WK_max_idx)[i]/EMP1.ground_truth_K[i],1:iter_count)
+# asdf=map(i->sum(tmp1.N[CartesianIndex(tmp1.idx[i])]),1:NUM_SEG)
+# asdf2=map(i->(EMP1.ground_truth_K-EMP1.diff_WK_max_idx)[i]/EMP1.ground_truth_K[i],1:NUM_SEG)
 # plot([EMP1.ground_truth_K-EMP1.diff_WK_max_idx,log.(asdf),asdf2])
 # plot(asdf2)
 # #

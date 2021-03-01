@@ -13,14 +13,18 @@ mutable struct BoundsSegment
 end
 
 mutable struct SegmentSR
+	#EXAMPLE:
+	#tmp1.ground_truth[3] returns the ground truth localisation of populations
+	#tmp1.loc[3] returns all measurements [x,y,FrNm] for the 3rd segment
+	#tmp1.MU[3] returns the means for each population in the 3rd segment
 	select::Function
 	idx::Array{Tuple{Int64,Int64},1}	#list of valid/verified segment indices
 		#Segment-restricted features
-	ground_truth::Array{Array{Float64,2},2}
-	loc::Array{Array{Float64,2},2}
-	frame::Array{Array{Int64,1},2}
-	mol_ID::Array{Array{Int64,1},2}
-	MU::Array{Array{Float64,2},2}
+	ground_truth::Array{Array{Float64,2},2}	#loc of populations
+	loc::Array{Array{Float64,2},2}			#measurements
+	frame::Array{Array{Int64,1},2}			#frame number corresponding to measurements
+	mol_ID::Array{Array{Int64,1},2}			#population ID for each measurement
+	MU::Array{Array{Float64,2},2}			#mean of measurements for each ID
 	K::Array{Int64,2}	#number of molecules in segment (according to ground_truth)
 	N::Array{Int64,2}	#number of observations in segment
 	bounds::Array{BoundsSegment,2}	#typeof(BoundsSegment)=BoundsSegment

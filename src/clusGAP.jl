@@ -19,7 +19,7 @@ mutable struct clusGAP
     function clusGAP(ModelWKLD_SR::SuperResolution.ModelSR,ModelRef_SR::SuperResolution.ModelSR,modINPUT=1)
         obj=new()
         obj.modus=modINPUT
-        obj.w_KLD_Distance_SR=SuperResolution.DistanceSR(ModelWKLD_SR,1)
+        obj.w_KLD_Distance_SR=SuperResolution.DistanceSR(ModelWKLD_SR,1) #function DistanceSR in struct DistanceSR in clusSR.jl
         obj.W_K=map(i->obj.w_KLD_Distance_SR.Distance[i].W_K,1:length(obj.w_KLD_Distance_SR.Distance))
         if obj.modus==1
             obj.KLD_Distance_SR=SuperResolution.DistanceSR(ModelRef_SR,2)
